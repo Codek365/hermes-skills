@@ -1,5 +1,5 @@
 ---
-name: cmux-browser-automation
+name: cmux-browser-4-hermes-ai
 description: "Drive cmux browser surfaces: navigate, click, fill, inspect."
 version: 0.1.0
 author: Hermes
@@ -7,8 +7,7 @@ metadata:
   hermes:
     tags: [Browser, Cmux, Automation, CLI]
 ---
-
-# cmux Browser Automation
+# cmux Browser for Hermes AI
 
 Drive cmux browser surfaces (the cmux app's built-in browser) from Hermes via the `terminal` tool. Covers navigation, DOM interaction, inspection, JS eval, state, tabs, dialogs, frames, and downloads. Does NOT replace `browser_navigate`/`browser_click` — those target the Hermes browser stack; this skill targets the user's cmux browser surfaces that share the user's authenticated profiles. Requires the cmux CLI (`/Applications/cmux.app/Contents/Resources/bin/cmux` on macOS).
 
@@ -173,6 +172,10 @@ cmux browser surface:2 state load /tmp/session.json
 cmux browser surface:2 reload
 ```
 
+## References
+
+- `references/cmux-command-reference.md` — full condensed command reference from cmux.com/docs/browser-automation; consult for exact flags/syntax without re-fetching the web docs.
+
 ## Pitfalls
 
 - Surface IDs (`surface:2`) are dynamic per session — always `identify` first; do not hardcode.
@@ -185,6 +188,7 @@ cmux browser surface:2 reload
 - `addinitscript` runs on every navigation before page scripts; `addscript` runs once immediately.
 - cmux browser surfaces share the user's authenticated browser profiles — do not use for anonymous/scraping tasks where isolation is needed; use `browser_navigate` instead.
 - Do NOT print cookies, tokens, or storage values unless the user explicitly asks.
+- Publishing to a GitHub skills repo with `hermes skills publish` when gh has multiple accounts: `gh auth switch --user <account>` may not persist for the publish subprocess. Set `GH_TOKEN=$(gh auth token --user <account>)` before calling `hermes skills publish` to ensure the correct token is used. The publish command creates a PR (not a direct push); merge it with `gh pr merge` afterwards.
 
 ## Verification
 

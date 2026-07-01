@@ -6,13 +6,13 @@ Personal Hermes Agent skills published from `hermes skills publish`.
 
 | Skill | Category | Description |
 |-------|----------|-------------|
-| [cmux-browser-automation](browser-automation/cmux-browser-automation/) | browser-automation | Drive cmux browser surfaces: navigate, click, fill, inspect. |
+| [cmux-browser-4-hermes-ai](browser-automation/cmux-browser-4-hermes-ai/) | browser-automation | Drive cmux browser surfaces: navigate, click, fill, inspect. |
 
 ## Install
 
 ```bash
 # Install a skill directly from this repo
-hermes skills install https://github.com/Codek365/hermes-skills/raw/main/browser-automation/cmux-browser-automation/SKILL.md
+hermes skills install https://github.com/Codek365/hermes-skills/raw/main/browser-automation/cmux-browser-4-hermes-ai/SKILL.md
 
 # Or add this repo as a skill source (tap)
 hermes skills tap add Codek365/hermes-skills
