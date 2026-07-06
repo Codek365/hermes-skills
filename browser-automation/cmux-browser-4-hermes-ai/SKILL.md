@@ -147,6 +147,10 @@ Downloads: `download --path <file> --timeout-ms <ms>`
 
 ## Common Patterns
 
+### Primary browser workspace for Google Workspace
+
+When the user wants Hermes to avoid taking over their normal browser/desktop and the work is mostly browser-based, prefer cmux browser surfaces before `computer_use`. For Google Workspace, have the user log into the cmux browser normally, then reuse that authenticated surface; this is not a permission bypass and must not involve copying cookies/tokens. For multi-account Google sessions, use explicit `u/<index>` or `authuser=<index>` URLs and verify the active account in the snapshot before any mutating work. See `references/google-workspace-cmux-profile.md` for the tested ktobi@matina.io pattern and commands.
+
 Navigate-wait-inspect:
 ```
 cmux browser open https://example.com/login
@@ -175,11 +179,53 @@ cmux browser surface:2 reload
 ## References
 
 - `references/cmux-command-reference.md` — full condensed command reference from cmux.com/docs/browser-automation; consult for exact flags/syntax without re-fetching the web docs.
+- `references/sandbox-routing.md` — decision matrix for combining cmux browser, Camofox persistent sandbox, dedicated Chrome CDP profile, and computer_use so Hermes can avoid stealing the user's desktop while still using authenticated browser sessions.
+- `references/google-workspace-cmux-profile.md` — tested pattern for reusing a user-completed Google Workspace login in cmux, including `u/<index>` / `authuser=<index>` account selection and safety boundaries.
+- `references/appscript-crud-via-cmux.md` — tested Apps Script CRUD pattern: REST API create/read/update with `script.projects`, plus cmux authenticated UI cleanup when Drive API trash/delete is blocked by Workspace policy.
+
+## Blazor App Login via cmux (Task9 pattern)
+
+Blazor Server apps (e.g. Task9 UI) use interactive forms where `fill`/`type` on `input[ref=eN]` selectors may fail because cmux ref selectors are not CSS. Use `eval` to set values and dispatch events:
+
+```bash
+# 1. Fill credentials via eval (works reliably with Blazor's input binding)
+cmux browser surface:3 eval --script "
+  const inputs = document.querySelectorAll('input');
+  inputs[0].value = 'testAdmin';
+  inputs[0].dispatchEvent(new Event('input', {bubbles:true}));
+  inputs[1].value = 'password';
+  inputs[1].dispatchEvent(new Event('input', {bubbles:true}));
+  'filled'
+"
+
+# 2. Click login button — try form submit first, then button click
+cmux browser surface:3 eval --script "
+  const form = document.querySelector('form');
+  if (form) { form.requestSubmit(); 'form submitted' }
+  else {
+    document.querySelectorAll('button').forEach(b => {
+      if (b.textContent.includes('Đăng nhập') || b.type === 'submit') b.click()
+    });
+    'btn clicked'
+  }
+"
+
+# 3. Wait + verify redirect (Blazor redirects after auth)
+sleep 5 && cmux browser surface:3 get url
+# Should show /report-seo-performance or /dashboard, not /login
+```
+
+Key points:
+- Blazor input binding requires `Event('input', {bubbles:true})` dispatch after setting `.value` — just setting value without the event won't register.
+- Login button may not have `type=submit`; try both `form.requestSubmit()` and `button.click()`.
+- After login, session persists in cmux's browser profile — subsequent navigations within the same surface stay authenticated.
+- Session can expire between cron runs; always check `get url` for redirect to `/login` before interacting with authenticated pages.
 
 ## Pitfalls
 
-- Surface IDs (`surface:2`) are dynamic per session — always `identify` first; do not hardcode.
+- Surface IDs (`surface:2`) are dynamic per session — always `identify` first; do not hardcode. If `cmux browser identify` returns `not_found: Surface not found or not a browser`, create/open a browser surface with `cmux browser open <url>` and parse the returned `OK surface=surface:N`; then target that surface explicitly for all subsequent commands.
 - `type` appends text; use `fill` to replace the entire field value.
+- For web tasks where the user wants Hermes not to steal the desktop or be affected by their windows, prefer routing in this order: cmux browser surface → Camofox persistent sandbox → dedicated Chrome CDP profile → `computer_use` only as a GUI/native fallback. See `references/sandbox-routing.md`.
 - `fill --text ""` clears the field.
 - `--snapshot-after` is available on mutating actions (click, fill, scroll, etc.) and returns a compact DOM snapshot immediately — use it to verify in one round-trip.
 - A surface may be a webview embedded in cmux; `focus-webview` / `is-webview-focused` check whether the webview has keyboard focus.
